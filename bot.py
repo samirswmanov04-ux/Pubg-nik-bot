@@ -1,142 +1,172 @@
+import os
 import random
+
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    MessageHandler,
+    ContextTypes,
+    filters,
+)
 
+# =========================
+# PUBG NICK GENERATOR
+# =========================
 
-# Har xil shriftlar
-FONT_STYLES = [
+STYLES = [
     {
-        "a": "𝕒𝕓𝕔𝕕𝕖𝕗𝕘𝕙𝕚𝕛𝕜𝕝𝕞𝕟𝕠𝕡𝕢𝕣𝕤𝕥𝕦𝕧𝕨𝕩𝕪𝕫",
-        "A": "𝔸𝔹ℂ𝔻𝔼𝔽𝔾ℍ𝕀𝕁𝕂𝕃𝕄ℕ𝕆ℙℚℝ𝕊𝕋𝕌𝕍𝕎𝕏𝕐ℤ"
+        "a": "abcdefghijklmnopqrstuvwxyz",
+        "b": "𝕒𝕓𝕔𝕕𝕖𝕗𝕘𝕙𝕚𝕛𝕜𝕝𝕞𝕟𝕠𝕡𝕢𝕣𝕤𝕥𝕦𝕧𝕨𝕩𝕪𝕫",
     },
     {
-        "a": "𝒶𝒷𝒸𝒹ℯ𝒻ℊ𝒽𝒾𝒿𝓀𝓁𝓂𝓃ℴ𝓅𝓆𝓇𝓈𝓉𝓊𝓋𝓌𝓍𝓎𝓏",
-        "A": "𝒜ℬ𝒞𝒟ℰℱ𝒢ℋℐ𝒥𝒦ℒℳ𝒩𝒪𝒫𝒬ℛ𝒮𝒯𝒰𝒱𝒲𝒳𝒴𝒵"
+        "a": "abcdefghijklmnopqrstuvwxyz",
+        "b": "𝖆𝖇𝖈𝖉𝖊𝖋𝖌𝖍𝖎𝖏𝖐𝖑𝖒𝖓𝖔𝖕𝖖𝖗𝖘𝖙𝖚𝖛𝖜𝖝𝖞𝖟",
     },
     {
-        "a": "𝖆𝖇𝖈𝖉𝖊𝖋𝖌𝖍𝖎𝖏𝖐𝖑𝖒𝖓𝖔𝖕𝖖𝖗𝖘𝖙𝖚𝖛𝖜𝖝𝖞𝖟",
-        "A": "𝕬𝕭𝕮𝕯𝕰𝕱𝕲𝕳𝕴𝕵𝕶𝕷𝕸𝕹𝕺𝕻𝕼𝕽𝕾𝕿𝖀𝖁𝖂𝖃𝖄𝖅"
+        "a": "abcdefghijklmnopqrstuvwxyz",
+        "b": "𝒶𝒷𝒸𝒹ℯ𝒻ℊ𝒽𝒾𝒿𝓀𝓁𝓂𝓃ℴ𝓅𝓆𝓇𝓈𝓉𝓊𝓋𝓌𝓍𝓎𝓏",
     },
     {
-        "a": "ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ",
-        "A": "ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ"
-    }
+        "a": "abcdefghijklmnopqrstuvwxyz",
+        "b": "ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ",
+    },
 ]
 
-
-# Bezaklar
 DECORATIONS = [
     ("꧁", "꧂"),
     ("『", "』"),
     ("乂", "乂"),
-    ("么", "么"),
-    ("彡", "彡"),
-    ("★", "★"),
-    ("✦", "✦"),
     ("亗", "亗"),
     ("♛", "♛"),
-    ("ツ", "ツ"),
+    ("★", "★"),
+    ("✦", "✦"),
     ("〆", "〆"),
+    ("ツ", "ツ"),
+    ("彡", "彡"),
     ("⚡", "⚡"),
 ]
 
+FORMATS = [
+    "{left}{name}{right}",
+    "{left} {name} {right}",
+    "亗 {name} 亗",
+    "★彡{name}彡★",
+    "『{name}』ツ",
+    "乂 {name} 乂",
+    "♛{name}♛",
+    "〆{name}〆",
+    "⚡{name}⚡",
+    "么{name}么",
+]
 
-def stylize(text, style):
+
+def stylish_name(name):
+    style = random.choice(STYLES)
+
     result = ""
 
-    for char in text:
-        if char.isalpha():
-            lower = char.lower()
+    for char in name:
+        lower = char.lower()
 
-            if lower in style["a"]:
-                index = style["a"].index(lower)
+        if lower in style["a"]:
+            index = style["a"].index(lower)
+            new_char = style["b"][index]
 
-                if char.isupper():
-                    result += style["A"][index]
-                else:
-                    result += style["a"][index]
-            else:
-                result += char
+            if char.isupper():
+                new_char = new_char.upper()
+
+            result += new_char
         else:
             result += char
 
     return result
 
 
-def generate_nicks(name):
-    nicks = []
+def generate_nicks(name, count=10):
+    result = set()
 
-    # Aralash va tasodifiy variantlar
-    for _ in range(12):
-        style = random.choice(FONT_STYLES)
+    attempts = 0
+
+    while len(result) < count and attempts < 100:
+        attempts += 1
+
+        styled = stylish_name(name)
+
         left, right = random.choice(DECORATIONS)
+        template = random.choice(FORMATS)
 
-        styled_name = stylize(name, style)
+        nick = template.format(
+            left=left,
+            name=styled,
+            right=right
+        )
 
-        # Har xil formatlar
-        formats = [
-            f"{left}{styled_name}{right}",
-            f"{left} {styled_name} {right}",
-            f"{left}〆{styled_name}{right}",
-            f"亗 {styled_name} 亗",
-            f"★彡{styled_name}彡★",
-            f"『{styled_name}』ツ",
-            f"乂 {styled_name} 乂",
-            f"♛{styled_name}♛",
-            f"〆{styled_name}〆",
-            f"⚡{styled_name}⚡",
-        ]
+        result.add(nick)
 
-        nick = random.choice(formats)
+    return list(result)
 
-        if nick not in nicks:
-            nicks.append(nick)
 
-    return nicks[:10]
-
+# =========================
+# COMMANDS
+# =========================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Mening ismim Samir Samanov"
-        "🎮 PUBG Nick Generator\n\n"
-        "Ismingizni yuboring va men sizga chiroyli PUBG niklar yaratib beraman!\n\n"
+        "🎮 PUBG NICK GENERATOR\n\n"
+        "Menga ismingizni yuboring.\n"
+        "Men sizga 10 ta chiroyli PUBG nik yaratib beraman.\n\n"
         "Masalan:\n"
         "Samir\n"
-        "Ali\n"
-        "Shadow"
+        "Shadow\n"
+        "Alex\n\n"
+        "Har safar boshqa shrift va boshqa bezaklar tanlanadi 🔥"
     )
 
 
 async def generate(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    name = update.message.text.strip()
-
-    if not name:
+    if not update.message or not update.message.text:
         return
+
+    name = update.message.text.strip()
 
     if len(name) > 30:
         await update.message.reply_text(
-            "❌ Ism juda uzun. 30 ta belgidan oshmasin."
+            "❌ Ism 30 ta belgidan uzun bo‘lmasin."
         )
         return
 
     nicks = generate_nicks(name)
 
-    message = "🔥 Siz uchun PUBG niklar:\n\n"
+    text = "🔥 SIZ UCHUN PUBG NIKLAR:\n\n"
 
     for i, nick in enumerate(nicks, 1):
-        message += f"{i}. `{nick}`\n"
+        text += f"{i}. {nick}\n"
 
-    message += "\n🎮 Yangi ism yuboring — yana boshqa niklar yarataman!"
+    text += "\n🎮 Yana boshqa ism yuboring!"
 
-    await update.message.reply_text(
-        message,
-        parse_mode="Markdown"
-    )
+    await update.message.reply_text(text)
 
+
+# =========================
+# ERROR HANDLER
+# =========================
+
+async def error_handler(update, context):
+    print("Xatolik:", context.error)
+
+
+# =========================
+# MAIN
+# =========================
 
 def main():
-    # BOT TOKENINGIZNI SHU YERGA YOZING
-    TOKEN = "8883360079:AAE5Hhm3rm0c4JZYSb2_SbKrvqnt_TIgW2Q"
+    TOKEN = os.getenv("BOT_TOKEN")
+
+    if not TOKEN:
+        print("❌ BOT_TOKEN topilmadi!")
+        print("Render Environment Variables bo‘limiga BOT_TOKEN qo‘shing.")
+        return
 
     app = (
         Application.builder()
@@ -149,11 +179,18 @@ def main():
     )
 
     app.add_handler(CommandHandler("start", start))
+
     app.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, generate)
+        MessageHandler(
+            filters.TEXT & ~filters.COMMAND,
+            generate
+        )
     )
 
-    print("Bot ishga tushdi!")
+    app.add_error_handler(error_handler)
+
+    print("✅ PUBG Nick Bot ishga tushdi!")
+
     app.run_polling()
 
 
